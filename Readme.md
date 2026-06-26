@@ -125,6 +125,7 @@ docker compose down
 * No manual database setup is required.
 * Make sure Docker Desktop is running before executing `docker compose up`.
 * Update the `.env` file with valid credentials before starting the application.
+* ⚠️ Gemini API Rate Limit: The configured Gemini API key handles a maximum of 13 requests per minute (RPM). Please be mindful of this limit during testing to avoid rate-limiting issues.
 
 ---
 

@@ -189,74 +189,70 @@ const generateCacheKey = (body) => {
 
 // Controller
 const analyzeTicket = AsyncHandler(async (req, res) => {
-  try {
-    const body = req.body;
+  const body = req.body;
 
-    // Input validation
-    if (!body?.ticket_id || typeof body.ticket_id !== "string" || !body.ticket_id.trim()) {
-      throw new ApiErrors(400, "Missing or invalid required field: ticket_id");
-    }
+  // Input validation
+  if (!body?.ticket_id || typeof body.ticket_id !== "string" || !body.ticket_id.trim()) {
+    throw new ApiErrors(400, "Missing or invalid required field: ticket_id");
+  }
 
-    if (!body?.complaint || typeof body.complaint !== "string" || !body.complaint.trim()) {
-      throw new ApiErrors(422, "Missing or empty required field: complaint");
-    }
+  if (!body?.complaint || typeof body.complaint !== "string" || !body.complaint.trim()) {
+    throw new ApiErrors(422, "Missing or empty required field: complaint");
+  }
 
-    const { ticket_id } = body;
+  const { ticket_id } = body;
 
-    // Check Redis cache
-    const cacheKey = generateCacheKey(body);
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      parsed.ticket_id = ticket_id;
-      return res
-        .status(200)
-        .json(
-          new ApiResponse(200, parsed, "Ticket analyzed successfully (cached)")
-        );
-    }
-
-    const limitKey = "gemini:limit";
-
-    const count = await redis.incr(limitKey);
-
-    if (count === 1) {
-      await redis.expire(limitKey, 60);
-    }
-
-    if (count > 13) {
-      const ttl = await redis.ttl(limitKey);
-      throw new ApiErrors(429, `You have exceeded the free API rate limit. Please try again after ${ttl} seconds.`);
-    }
-
-
-    // Call Gemini
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      systemInstruction: SYSTEM_PROMPT,
-      generationConfig: {
-        responseMimeType: "application/json",
-      }
-    });
-
-    const result = await model.generateContent(buildUserPrompt(body));
-
-    const rawText = result.response.text();
-
-    const parsed = JSON.parse(rawText)
-
-    // Sanitize & enforce safety rules
-    const safeResult = sanitizeResponse(parsed, ticket_id);
-
-    // Cache the result
-    await redis.set(cacheKey, JSON.stringify(safeResult), "EX", CACHE_TTL);
-
+  // Check Redis cache
+  const cacheKey = generateCacheKey(body);
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    const parsed = JSON.parse(cached);
+    parsed.ticket_id = ticket_id;
     return res
       .status(200)
-      .json(new ApiResponse(200, safeResult, "Ticket analyzed successfully"));
-  } catch (error) {
-    console.log(error)
+      .json(
+        new ApiResponse(200, parsed, "Ticket analyzed successfully (cached)")
+      );
   }
+
+  const limitKey = "gemini:limit";
+
+  const count = await redis.incr(limitKey);
+
+  if (count === 1) {
+    await redis.expire(limitKey, 60);
+  }
+
+  if (count > 13) {
+    const ttl = await redis.ttl(limitKey);
+    throw new ApiErrors(429, `You have exceeded the free API rate limit. Please try again after ${ttl} seconds.`);
+  }
+
+
+  // Call Gemini
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    systemInstruction: SYSTEM_PROMPT,
+    generationConfig: {
+      responseMimeType: "application/json",
+    }
+  });
+
+  const result = await model.generateContent(buildUserPrompt(body));
+
+  const rawText = result.response.text();
+
+  const parsed = JSON.parse(rawText)
+
+  // Sanitize & enforce safety rules
+  const safeResult = sanitizeResponse(parsed, ticket_id);
+
+  // Cache the result
+  await redis.set(cacheKey, JSON.stringify(safeResult), "EX", CACHE_TTL);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, safeResult, "Ticket analyzed successfully"));
 });
 
 export default analyzeTicket;
