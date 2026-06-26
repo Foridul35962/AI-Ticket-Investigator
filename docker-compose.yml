@@ -1,0 +1,42 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sustPreliServer
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    depends_on:
+      - redis
+    env_file:
+      - .env.docker
+    volumes:
+      - .:/server
+      - /server/node_modules
+    
+      
+  redis:
+    image: redis:7-alpine
+    container_name: sustPreli_redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - sustPreli_redis_data:/data
+      
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: sustPreli_redisinsight
+    restart: unless-stopped
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+    volumes:
+      - sustPreli_redisinsight_data:/data
+      
+volumes:
+  sustPreli_redis_data:
+  sustPreli_redisinsight_data:
