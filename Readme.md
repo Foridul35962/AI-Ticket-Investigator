@@ -10,7 +10,7 @@ This project provides the backend services for the AI-Ticket-Investigator platfo
 
 The deployed backend is available at:
 
-**🔗 Live URL:** `https://ai-ticket-investigator.vercel.app`
+**🔗 Live URL:** <https://ai-ticket-investigator.vercel.app>
 
 ---
 
