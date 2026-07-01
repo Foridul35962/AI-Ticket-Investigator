@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import errorHandler from './helpers/ErrorHandler.js'
-import analyzeTicket from './controller/analyzeTicket.js'
+import analyzeTicket from './controller/analyzeTicketRuleBased.js'
 
 const app = express()
 
