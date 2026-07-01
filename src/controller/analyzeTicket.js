@@ -151,14 +151,6 @@ const sanitizeResponse = (parsed, ticket_id) => {
 
   parsed.human_review_required = Boolean(parsed.human_review_required);
 
-  if (
-    typeof parsed.confidence !== "number" ||
-    parsed.confidence < 0 ||
-    parsed.confidence > 1
-  ) {
-    parsed.confidence = 0.7;
-  }
-
   if (!Array.isArray(parsed.reason_codes)) parsed.reason_codes = [];
 
   const requiredStrings = [
